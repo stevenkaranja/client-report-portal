@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Client Report Portal</title>
+</head>
+<body>
+    <h2>SACS Report Generator</h2>
+
+    <form action="/generate" method="POST">
+        <label>Client Name:</label><br>
+        <input type="text" name="client_name" required><br><br>
+
+        <label>Monthly Inflow:</label><br>
+        <input type="number" name="inflow" step="0.01" required><br><br>
+
+        <label>Monthly Outflow:</label><br>
+        <input type="number" name="outflow" step="0.01" required><br><br>
+
+        <p><i>Excess will be automatically calculated and allocated to Private Reserve.</i></p>
+
+        <h3>Account Balances (TCC Preview)</h3>
+
+        <label>Retirement Accounts Total:</label><br>
+        <input type="number" name="retirement" step="0.01"><br><br>
+
+        <label>Non-Retirement Accounts Total:</label><br>
+        <input type="number" name="non_retirement" step="0.01"><br><br>
+
+        <label>Trust (e.g. Property Value):</label><br>
+        <input type="number" name="trust" step="0.01"><br><br>
+
+        <label>Liabilities (e.g. Mortgage):</label><br>
+        <input type="number" name="liabilities" step="0.01"><br><br>
+
+        <button type="submit">Generate PDF</button>
+    </form>
+</body>
+</html>

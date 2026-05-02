@@ -1,0 +1,139 @@
+{% extends "base.html" %}
+{% block title %}Generate Report — {{ client.name }}{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1>Generate Report</h1>
+    <p class="page-sub">{{ client.name }}{% if client.spouse_name %} &amp; {{ client.spouse_name }}{% endif %}</p>
+  </div>
+  <a href="{{ url_for('client_detail', cid=client.id) }}" class="btn btn-ghost btn-sm">← Back</a>
+</div>
+
+<form method="POST" action="{{ url_for('generate', cid=client.id) }}">
+
+  <!-- ── Quarter ─────────────────────────────────────────────────────── -->
+  <div class="card">
+    <div class="card-title">Report Period</div>
+    <div class="form-group" style="max-width:240px;">
+      <label>Quarter</label>
+      <input type="text" name="quarter" value="{{ quarter }}" placeholder="Q2 2026">
+      <span class="field-hint">e.g. Q2 2026</span>
+    </div>
+  </div>
+
+  <!-- ── SACS Inputs ─────────────────────────────────────────────────── -->
+  <div class="card">
+    <div class="card-title">Cash Flow (SACS)</div>
+    <div class="form-grid-3">
+      <div class="form-group">
+        <label>Monthly Inflow</label>
+        <input type="number" name="inflow" step="0.01" min="0"
+               value="{{ client.monthly_salary }}" required>
+        <span class="field-hint">Pre-filled from profile — update if changed</span>
+      </div>
+      <div class="form-group">
+        <label>Monthly Outflow</label>
+        <input type="number" name="outflow" step="0.01" min="0"
+               value="{{ client.expense_budget }}" required>
+        <span class="field-hint">Pre-filled from profile — update if changed</span>
+      </div>
+      <div class="form-group">
+        <label>Private Reserve — Current Balance</label>
+        <input type="number" name="pr_balance" step="0.01" min="0" placeholder="0"
+               value="">
+        <span class="field-hint">Today's balance in the high-yield savings account</span>
+      </div>
+    </div>
+
+    <!-- Live excess calculation -->
+    <div style="margin-top:16px;background:var(--brand-lt);border-radius:var(--radius-sm);padding:12px 16px;display:flex;gap:32px;flex-wrap:wrap;">
+      <span style="font-size:13px;color:var(--brand);">
+        <strong>Excess (auto):</strong>
+        <span id="excess-display" style="font-size:16px;font-weight:700;margin-left:6px;">$0</span>
+      </span>
+      <span style="font-size:13px;color:var(--text-lt);">
+        Reserve target: <strong>${{ "{:,.0f}".format(client.private_reserve_target) }}</strong>
+      </span>
+    </div>
+  </div>
+
+  <!-- ── TCC Account Balances ────────────────────────────────────────── -->
+  <div class="card">
+    <div class="card-title">Account Balances (TCC)</div>
+    <p style="font-size:13px;color:var(--text-lt);margin-bottom:16px;">
+      Enter the current balance for each account. Last known values are shown as placeholders.
+      Fields left blank will carry forward the previous value.
+    </p>
+
+    {% set categories = [
+      ('retirement',    'Retirement Accounts'),
+      ('non_retirement','Non-Retirement Accounts'),
+      ('trust',         'Trust / Property'),
+      ('liability',     'Liabilities'),
+    ] %}
+
+    {% for cat_key, cat_label in categories %}
+      {% set cat_accounts = accounts | selectattr('category', 'equalto', cat_key) | list %}
+      {% if cat_accounts %}
+      <div class="section-divider">{{ cat_label }}</div>
+      {% for acc in cat_accounts %}
+      <div class="balance-group">
+        <div class="balance-group-label">
+          <div class="acc-name">
+            {{ acc.name }}
+            {% if acc.last_four %}<span style="color:var(--text-lt);">···{{ acc.last_four }}</span>{% endif %}
+          </div>
+          <div class="acc-meta">
+            <span class="badge badge-{{ acc.owner }}">{{ acc.owner.replace('client','Client ').title() }}</span>
+            {% if acc.interest_rate %}&nbsp;· {{ "%.2f"|format(acc.interest_rate) }}% APR{% endif %}
+          </div>
+          {% if acc.last_balance %}
+          <div class="last-val">Last known: ${{ "{:,.0f}".format(acc.last_balance) }}</div>
+          {% endif %}
+        </div>
+        <div>
+          <input type="number" name="bal_{{ acc.id }}" step="0.01" min="0"
+                 placeholder="{{ "{:,.0f}".format(acc.last_balance) if acc.last_balance else '0' }}">
+        </div>
+      </div>
+      {% endfor %}
+      {% endif %}
+    {% endfor %}
+
+    {% if not accounts %}
+    <p style="color:var(--text-lt);font-size:14px;">
+      No accounts configured for this client.
+      <a href="{{ url_for('edit_client', cid=client.id) }}">Add accounts first.</a>
+    </p>
+    {% endif %}
+  </div>
+
+  <div style="display:flex;gap:12px;justify-content:flex-end;">
+    <a href="{{ url_for('client_detail', cid=client.id) }}" class="btn btn-ghost">Cancel</a>
+    <button type="submit" class="btn btn-success" style="font-size:15px;padding:11px 28px;">
+      ⬇ Download PDF Report
+    </button>
+  </div>
+
+</form>
+
+<script>
+  const inflowEl  = document.querySelector('input[name="inflow"]');
+  const outflowEl = document.querySelector('input[name="outflow"]');
+  const display   = document.getElementById('excess-display');
+
+  function updateExcess() {
+    const inflow  = parseFloat(inflowEl.value)  || 0;
+    const outflow = parseFloat(outflowEl.value) || 0;
+    const excess  = Math.max(inflow - outflow, 0);
+    display.textContent = '$' + excess.toLocaleString('en-US', {maximumFractionDigits: 0});
+    display.style.color = excess > 0 ? 'var(--green)' : 'var(--red)';
+  }
+
+  inflowEl.addEventListener('input', updateExcess);
+  outflowEl.addEventListener('input', updateExcess);
+  updateExcess();
+</script>
+
+{% endblock %}

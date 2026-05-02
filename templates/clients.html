@@ -1,0 +1,48 @@
+{% extends "base.html" %}
+{% block title %}Clients — Report Portal{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1>Clients</h1>
+    <p class="page-sub">Select a client to view their profile or generate a quarterly report.</p>
+  </div>
+  <a href="{{ url_for('new_client') }}" class="btn btn-primary">+ Add Client</a>
+</div>
+
+<div class="table-wrap">
+  <table>
+    <thead>
+      <tr>
+        <th>Client</th>
+        <th>Spouse</th>
+        <th>Monthly Inflow</th>
+        <th>Expense Budget</th>
+        <th>Last Report</th>
+        <th></th>
+      </tr>
+    </thead>
+    <tbody>
+      {% if clients %}
+        {% for cl in clients %}
+        <tr>
+          <td><strong>{{ cl.name }}</strong></td>
+          <td>{{ cl.spouse_name or '—' }}</td>
+          <td>${{ "{:,.0f}".format(cl.monthly_salary) }}</td>
+          <td>${{ "{:,.0f}".format(cl.expense_budget) }}</td>
+          <td>{{ cl.last_report_date or 'Never' }}</td>
+          <td>
+            <div style="display:flex;gap:8px;justify-content:flex-end;">
+              <a href="{{ url_for('client_detail', cid=cl.id) }}" class="btn btn-outline btn-sm">View</a>
+              <a href="{{ url_for('report_form', cid=cl.id) }}" class="btn btn-success btn-sm">Generate Report</a>
+            </div>
+          </td>
+        </tr>
+        {% endfor %}
+      {% else %}
+        <tr><td colspan="6" class="no-rows">No clients yet. <a href="{{ url_for('new_client') }}">Add your first client.</a></td></tr>
+      {% endif %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

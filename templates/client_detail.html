@@ -1,0 +1,124 @@
+{% extends "base.html" %}
+{% block title %}{{ client.name }} — Report Portal{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1>{{ client.name }}</h1>
+    {% if client.spouse_name %}<p class="page-sub">with {{ client.spouse_name }}</p>{% endif %}
+  </div>
+  <div class="actions-bar">
+    <a href="{{ url_for('report_form', cid=client.id) }}" class="btn btn-success">Generate Report</a>
+    <a href="{{ url_for('edit_client', cid=client.id) }}" class="btn btn-outline">Edit Profile</a>
+    <a href="{{ url_for('clients') }}" class="btn btn-ghost btn-sm">← All Clients</a>
+  </div>
+</div>
+
+<!-- Stats row -->
+<div class="stats-row">
+  <div class="stat-card">
+    <div class="stat-label">Monthly Inflow</div>
+    <div class="stat-value">${{ "{:,.0f}".format(client.monthly_salary) }}</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-label">Expense Budget</div>
+    <div class="stat-value">${{ "{:,.0f}".format(client.expense_budget) }}</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-label">Monthly Excess</div>
+    <div class="stat-value">${{ "{:,.0f}".format([client.monthly_salary - client.expense_budget, 0]|max) }}</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-label">Reserve Target</div>
+    <div class="stat-value">${{ "{:,.0f}".format(client.private_reserve_target) }}</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-label">Last Report</div>
+    <div class="stat-value" style="font-size:15px;">{{ client.last_report_date or 'Never' }}</div>
+  </div>
+</div>
+
+<!-- Client info card -->
+<div class="card">
+  <div class="card-title">Profile</div>
+  <div class="form-grid">
+    <div>
+      <span style="font-size:12px;color:var(--text-lt);font-weight:600;text-transform:uppercase;">Client 1</span>
+      <p style="margin-top:4px;"><strong>{{ client.name }}</strong></p>
+      {% if client.dob %}<p style="font-size:13px;color:var(--text-lt);">DOB: {{ client.dob }}</p>{% endif %}
+      {% if client.ssn_last4 %}<p style="font-size:13px;color:var(--text-lt);">SSN: ···{{ client.ssn_last4 }}</p>{% endif %}
+    </div>
+    {% if client.spouse_name %}
+    <div>
+      <span style="font-size:12px;color:var(--text-lt);font-weight:600;text-transform:uppercase;">Client 2 (Spouse)</span>
+      <p style="margin-top:4px;"><strong>{{ client.spouse_name }}</strong></p>
+      {% if client.spouse_dob %}<p style="font-size:13px;color:var(--text-lt);">DOB: {{ client.spouse_dob }}</p>{% endif %}
+      {% if client.spouse_ssn_last4 %}<p style="font-size:13px;color:var(--text-lt);">SSN: ···{{ client.spouse_ssn_last4 }}</p>{% endif %}
+    </div>
+    {% endif %}
+  </div>
+</div>
+
+<!-- Accounts -->
+<div class="card">
+  <div class="card-title">Accounts ({{ accounts|length }})</div>
+  {% if accounts %}
+  <div class="table-wrap" style="box-shadow:none;border:1px solid var(--border);">
+    <table>
+      <thead>
+        <tr>
+          <th>Account</th>
+          <th>Type</th>
+          <th>Owner</th>
+          <th>Last 4</th>
+          <th>APR</th>
+          <th style="text-align:right;">Last Balance</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for acc in accounts %}
+        <tr>
+          <td><strong>{{ acc.name }}</strong></td>
+          <td><span class="badge badge-{{ acc.category }}">{{ acc.category.replace('_',' ').title() }}</span></td>
+          <td><span class="badge badge-{{ acc.owner }}">{{ acc.owner.replace('client','Client ').title() }}</span></td>
+          <td>{% if acc.last_four %}···{{ acc.last_four }}{% else %}—{% endif %}</td>
+          <td>{% if acc.interest_rate %}{{ "%.2f"|format(acc.interest_rate) }}%{% else %}—{% endif %}</td>
+          <td style="text-align:right;">${{ "{:,.0f}".format(acc.last_balance) }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+    <p style="color:var(--text-lt);font-size:14px;">No accounts configured. <a href="{{ url_for('edit_client', cid=client.id) }}">Edit profile</a> to add accounts.</p>
+  {% endif %}
+</div>
+
+<!-- Report history -->
+<div class="card">
+  <div class="card-title">Report History</div>
+  {% if reports %}
+  <div class="table-wrap" style="box-shadow:none;border:1px solid var(--border);">
+    <table>
+      <thead>
+        <tr>
+          <th>Quarter</th>
+          <th>Generated</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for r in reports %}
+        <tr>
+          <td><strong>{{ r.quarter }}</strong></td>
+          <td style="color:var(--text-lt);font-size:13px;">{{ r.generated_at[:10] }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+    <p style="color:var(--text-lt);font-size:14px;">No reports generated yet. <a href="{{ url_for('report_form', cid=client.id) }}">Generate the first one.</a></p>
+  {% endif %}
+</div>
+
+{% endblock %}
